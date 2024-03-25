@@ -29,5 +29,4 @@ public class baekjoon9251 {
         }
         return  dp[a][b];
     }
-
 }
