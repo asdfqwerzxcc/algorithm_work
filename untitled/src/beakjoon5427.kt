@@ -82,7 +82,7 @@ fun main(){
                 if(nx < 0 || nx >= h || ny < 0 || ny >= w) {    //상근의 탈출 조건
                     answer = curTime
                     break
-                }
+                } 
                 //다음 노드가 벽이 아닌 노드 and (다음 노드가 불이 지나갈 곳이 아니거나, 상근이가 불보다 더 빨리 지나갈 곳이라면)
                 if(building[nx][ny] != '#' && (fireVisited[nx][ny] == 0 || fireVisited[nx][ny] > curTime + 1)){
                     if(!personVisited[nx][ny]) {
