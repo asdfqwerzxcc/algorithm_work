@@ -1,7 +1,9 @@
 fun main(){
     val extentionList = mutableMapOf<String,Int>()
     repeat(readln().toInt()){
+
         val extension= readln().split(".")[1]
+
         if(extentionList.containsKey(extension)) {
             extentionList[extension] = extentionList[extension]!!+1
         }else{
