@@ -5,7 +5,7 @@ fun main(){
     var a= st.nextToken().toInt()
     var b= st.nextToken().toInt()
     var c= st.nextToken().toInt()
-    var d= st.nextToken().toInt()
+    var d= readln().toInt()
 
     c+=d
 
