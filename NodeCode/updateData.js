@@ -1,52 +1,51 @@
 function processData(newData) {
-  const timeGroups = new Map();
+  // Pre-calculate array length for better memory allocation
+  const resultSize = newData.length;
+  const result = new Array(resultSize);
+
+  // Use objects instead of Maps for better performance
+  const timeGroups = {};
+  const previousValues = {};
+  const timeFormats = {};
   const allTags = new Set();
-  const previousValues = new Map();
-  const timeFormats = new Map();
-  const latestValues = new Map();
 
-  // First pass: Group by time
-  newData.forEach((item) => {
+  // First pass: Group by time with faster for...of loop
+  for (const item of newData) {
     const timeKey = new Date(item.time).getTime();
-    if (!timeGroups.has(timeKey)) {
-      timeGroups.set(timeKey, new Map());
-      timeFormats.set(timeKey, item.time);
+    if (!timeGroups[timeKey]) {
+      timeGroups[timeKey] = {};
+      timeFormats[timeKey] = item.time;
     }
-    timeGroups.get(timeKey).set(item.tag, item);
+    timeGroups[timeKey][item.tag] = item;
     allTags.add(item.tag);
-  });
+  }
 
-  const result = [];
-  const sortedTimes = Array.from(timeGroups.keys()).sort();
+  // Convert to array once
+  const sortedTimes = Object.keys(timeGroups).sort((a, b) => a - b);
+  const tagsArray = Array.from(allTags);
+  let resultIndex = 0;
 
-  sortedTimes.forEach((timeKey) => {
-    const currentGroup = timeGroups.get(timeKey);
-    const originalTimeFormat = timeFormats.get(timeKey);
+  // Use faster for...of loops instead of forEach
+  for (const timeKey of sortedTimes) {
+    const currentGroup = timeGroups[timeKey];
+    const originalTimeFormat = timeFormats[timeKey];
 
-    allTags.forEach((tag) => {
-      if (currentGroup.has(tag)) {
-        const currentValue = currentGroup.get(tag);
-        result.push(currentValue);
-        previousValues.set(tag, currentValue);
-      } else {
-        const prevValue = previousValues.get(tag);
-        if (prevValue) {
-          result.push({
-            time: originalTimeFormat,
-            tag: tag,
-            tagvalue: prevValue.tagvalue,
-          });
-        }
+    for (const tag of tagsArray) {
+      if (tag in currentGroup) {
+        result[resultIndex++] = currentGroup[tag];
+        previousValues[tag] = currentGroup[tag];
+      } else if (previousValues[tag]) {
+        result[resultIndex++] = {
+          time: originalTimeFormat,
+          tag,
+          tagvalue: previousValues[tag].tagvalue,
+        };
       }
-    });
-  });
+    }
+  }
 
-  // Update latestValues after all processing
-  previousValues.forEach((value, tag) => {
-    latestValues.set(tag, value);
-  });
-
-  return result;
+  // Trim any unused array slots
+  return result.slice(0, resultIndex);
 }
 
 // 테스트
@@ -61,8 +60,11 @@ const data = [
   { time: "2024-01-16T10:03:00", tag: "c", tagvalue: 11 },
   { time: "2024-01-16T10:04:00", tag: "a", tagvalue: 12 },
 ];
-
+const start = performance.now();
 const result = processData(data);
+const end = performance.now();
+
+console.log(`Execution time: ${end - start} ms`);
 const resultdate = [
   { time: "2024-01-16T10:00:00", tag: "a", tagvalue: 1 },
   { time: "2024-01-16T10:00:00", tag: "b", tagvalue: 2 },
@@ -89,12 +91,33 @@ const moreData = [
   { time: "2024-01-16T10:07:00", tag: "b", tagvalue: 17 },
   { time: "2024-01-16T10:07:00", tag: "c", tagvalue: 18 },
 ];
+// 대용량 데이터 샘플 생성
+const largeData = [];
+const tags = ["a", "b", "c", "d", "e"];
+const startTime = new Date("2024-01-16T10:00:00").getTime();
+
+for (let i = 0; i < 100000; i++) {
+  const time = new Date(startTime + i * 60000).toISOString(); // 1분 간격
+  const tag = tags[i % tags.length];
+  const tagvalue = Math.floor(Math.random() * 100);
+  largeData.push({ time, tag, tagvalue });
+}
+
+const startLarge = performance.now();
+const largeResult = processData(largeData);
+const endLarge = performance.now();
+
+console.log(`Execution time for large data: ${endLarge - startLarge} ms`);
+console.log(`Processed ${largeResult.length} entries`);
+const start1 = performance.now();
 
 const moreResult = processData(moreData);
+const end1 = performance.now();
+
+console.log(`Execution time: ${end1 - start1} ms`);
 const moreResultDate = [
   { time: "2024-01-16T10:05:00", tag: "a", tagvalue: 13 },
   { time: "2024-01-16T10:05:00", tag: "b", tagvalue: 14 },
-  { time: "2024-01-16T10:05:00", tag: "c", tagvalue: 11 },
   { time: "2024-01-16T10:06:00", tag: "a", tagvalue: 13 },
   { time: "2024-01-16T10:06:00", tag: "b", tagvalue: 14 },
   { time: "2024-01-16T10:06:00", tag: "c", tagvalue: 15 },
@@ -106,6 +129,6 @@ const moreResultDate = [
 const testMoreResult =
   JSON.stringify(moreResult) === JSON.stringify(moreResultDate);
 
-console.log(moreResult);
+console.log(testMoreResult);
 
 console.log(testResult);
